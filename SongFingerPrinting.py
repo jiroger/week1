@@ -6,7 +6,7 @@ import numpy as np
 from microphone import record_audio
 from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.filters import minimum_filter
-from scipy.ndimage.morphology import generate_binary_structure, binary_erosion 
+from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.morphology import iterate_structure
 import librosa
 
@@ -19,7 +19,7 @@ class SongFingerPrinting():
     def findpeaks(self, spec):
         """
         Finds the local peaks of a given spectrogram
-        
+
         Parameters
         ----------
         spec : Spectrogram or np.ndarray
@@ -28,9 +28,9 @@ class SongFingerPrinting():
         Returns
         -------
         bins : np.ndarray
-            the coordinates of the local maximums within the spectrogram 
+            the coordinates of the local maximums within the spectrogram
         """
-        
+
         if type(spec) != np.ndarray:
             songname, fs = librosa.load(spec, sr=44100, mono=True)
             self.fs = fs
@@ -48,20 +48,22 @@ class SongFingerPrinting():
         local = spec == maximum_filter(spec, footprint=neighborhood)
 
         intersection = local & foreground
-        bins = np.argwhere(intersection) 
+        bins = np.argwhere(intersection)
         return bins
-    
+
     def addtodb(self, name, artist, bins):
-        
+
         """
         Adds a song to the database
-        
+
         Parameters
         ----------
         name : String
             The name of the song
+            
         artist: String
             The artist of the song
+            
         bins: np.ndarray
             the coordinates of the local maximum in a spectograph
 
@@ -69,11 +71,11 @@ class SongFingerPrinting():
         -------
         None
         """
-        
+
         self.songnames.append(name)
         for index, f1t1 in enumerate(bins):
             try:
-                if (index + 20 < bins.size):  
+                if (index + 20 < bins.size):
                     fanout = bins[index+1:index+21]
                 else:
                     fanout = bins[index+1:]
@@ -85,14 +87,14 @@ class SongFingerPrinting():
                     if x in self.database:
                         self.database[x].append((name, artist, t1)) # if we have a key for this fp, we add the song,artist, and time at which first peak occurred
                     else:
-                        self.database[x] = [(name, artist, t1)] #add a new key-value pair             
+                        self.database[x] = [(name, artist, t1)] #add a new key-value pair
             except:
                 break
-                
+
     def findprob(self, song):
         """
         Finds the frequency of each matching fingerprint within an excerpt
-        
+
         Parameters
         ----------
         song : List
@@ -101,12 +103,12 @@ class SongFingerPrinting():
         Returns
         -------
         probs : String
-            represents the % chance of a given song (in the format of __a number__% chance of being ___song name____). 
+            represents the % chance of a given song (in the format of __a number__% chance of being ___song name____).
         """
         songcounts = {}
         count = 0
         probs = ""
-        
+
         for asong in song:
             if asong[0][0] in songcounts:
                 songcounts[asong[0][0]] += asong[1]
@@ -124,18 +126,31 @@ class SongFingerPrinting():
                 probs += ". "
             except:
                 pass
-            
+
         if len(probs) == 0:
             probs = "no sound matches"
         return probs
-                
+
     def match_song(self, excerpt): #note to self: excerpt = [(t1,f1),(t2,f2), etc]
-        templist = [] 
+        """
+        Matches the given song excerpt with the song the excerpt came from
+
+        Parameters
+        ----------
+        excerpt : List
+            contains tuples which represent a given time (t sub n) at which the corresponding frequency occurred (f sub n)
+
+        Returns
+        -------
+        self.findprob(...) : String
+            represents the % chance of a given song (in the format of __a number__% chance of being ___song name____).
+        """
+        templist = []
 
         for index, fe1te1 in enumerate(excerpt):
             try:
 
-                if (index + 20 < excerpt.size):  
+                if (index + 20 < excerpt.size):
 
                     fanout = excerpt[index+1:index+21]
                 else:
@@ -153,24 +168,46 @@ class SongFingerPrinting():
             except:
                 break
 
-        return self.findprob(collections.Counter(templist).most_common()) 
+        return self.findprob(collections.Counter(templist).most_common())
 
     def make_excerpt(self, time):
+        """
+        Converts microphone input into a spectrograph and then into a list containing the coordinates of the local peaks.
+
+        Parameters
+        ----------
+        time : int
+            how long the excerpt will be
+
+        Returns
+        -------
+        self.findpeaks(...) : Spectrograph
+            the coordinates of the local maximums within the spectrogram
+        """
         recording = record_audio(time)
         excerpt = np.hstack([np.fromstring(i, np.int16) for i in recording[0]])
 
         excerpt_spec, freqs_spec, times_spec = mlab.specgram(excerpt, NFFT=4096, Fs=self.fs,
                                                           window=mlab.window_hanning,
-                                                          noverlap=(4096 // 2)) 
+                                                          noverlap=(4096 // 2))
 
         return self.findpeaks(excerpt_spec)
-    
+
     def example_load(self):
+        """
+        Loads a select bunch of songs into the database
+        
+        Parameters
+        ----------
+        None
+        
+        Returns
+        -------
+        None
+        """
         #self.addtodb("what u need", "the weeknd", self.findpeaks(r"/Users/ji-macbook15/Desktop/moo/2.mp3"))
         #self.addtodb("im the one", "dj khaled ft. justin bieber, quavo, chance the rapper, lil wayne", self.findpeaks(r"/Users/ji-macbook15/Desktop/moo/1.mp3"))
         #self.addtodb("in the night", "the weeknd", self.findpeaks(r"/Users/ji-macbook15/Desktop/moo/3.mp3"))
         self.addtodb("work from home", "5h", self.findpeaks(r"/Users/ji-macbook15/Desktop/moo/4.mp3"))
         #self.addtodb("night changes", "1d", self.findpeaks(r"/Users/ji-macbook15/Desktop/moo/5.mp3"))
         self.addtodb("blank space", "taylor swift", self.findpeaks(r"/Users/ji-macbook15/Desktop/moo/6.mp3"))
-        
-        
