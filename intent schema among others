@@ -1,0 +1,25 @@
+{
+  "intents": [
+    {
+      "intent": "YesIntent"
+    },
+    {
+      "intent": "NoIntent"
+    },
+    {
+      "intent": "AMAZON.PauseIntent"
+    },
+    {
+      "intent": "AMAZON.ResumeIntent"
+    }
+  ]
+}
+
+
+//////
+YesIntent yes
+YesIntent sure
+YesIntent yeah
+NoIntent no
+NoIntent nah
+NoIntent stop

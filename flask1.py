@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_ask import Ask, statement, question
 import requests
 import time
@@ -24,7 +24,7 @@ def start_skill():
 
 @ask.intent("YesIntent")
 def rate_song():
-    song = songfp.make_excerpt(10)
+    song = songfp.make_excerpt(8)
     out = songfp.match_song(song)
     print(out)
     return statement(out)
